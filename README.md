@@ -1,4 +1,3 @@
-````{"variant":"standard","title":"README for MQTT Temp Sensor","id":"82341"}
 # MQTT Temp Sensor
 
 A simple Wi-Fi temperature and humidity sensor using MQTT for data reporting. Designed for easy deployment around an office for environment monitoring and automation.
