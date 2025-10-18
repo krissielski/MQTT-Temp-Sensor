@@ -4,7 +4,9 @@
 #       pip install paho-mqtt
 
 import paho.mqtt.client as mqtt
+import time
 import secrets
+
 
 
 ############
@@ -14,7 +16,7 @@ def on_connect(client, userdata, flags, rc, properties=None):
     print("CONNACK received with code %s." % rc)
 
 def on_message(client, userdata, msg):
-    print(msg.topic + " " + str(msg.qos) + " " + str(msg.payload))
+    print( str(int(time.time())) + ": " + msg.topic + " " + str(msg.payload))
 
 
 # -Code start- #
@@ -29,14 +31,16 @@ client.connect(secrets.MQTT_URL, secrets.MQTT_PORT)
 
 client.subscribe("#", qos=1)
 
-client.publish("encyclopedia/temperature", payload="hot", qos=1)
+#client.publish("topic", payload="data_string")
 
 
 # loop_forever
 try:
     client.loop_forever()
-except:
-    None
+except KeyboardInterrupt:
+    client.disconnect()
+except Exception as e:
+    print("Error:", e)
 
 print("Exiting....")
 
