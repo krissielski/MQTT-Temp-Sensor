@@ -1,6 +1,11 @@
 
 #Secret Files
 secrets.h
+secrets.py
+
+#python
+__pycache__
+
 
 
 
