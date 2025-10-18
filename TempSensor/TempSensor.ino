@@ -19,6 +19,58 @@ PubSubClient     mqttClient(wifiClient);
 
 
 
+void publish(void)
+{
+  static boolean firstPublish = true;
+
+  Serial.println( "Publishing!");
+
+  //Check if connected
+  if( !mqttClient.connected() )
+  {
+    Serial.print( "Connecting... ");
+
+    if ( mqttClient.connect("sensor-01", MQTT_USER, MQTT_PASS) )
+    {
+      Serial.print("Success: "); Serial.println( mqttClient.state() );
+    }
+    else
+    {
+      Serial.print("**FAIL**: "); Serial.println( mqttClient.state() );   
+      return;
+    }
+  }
+
+
+  //Is this the first publish?
+  if( firstPublish )
+  {
+    mqttClient.publish("sensors/office1/online","True");
+    firstPublish = false;
+  }
+
+
+  //ToDo: Get Temperature data here
+
+
+  //Publish
+  if( mqttClient.publish("sensors/office1/temperature","hello world") )
+  {
+    Serial.println("++");
+  }
+  else
+  {
+    Serial.print("MQTT Publish failure: "); Serial.println( mqttClient.state() );
+  }
+
+
+  //ToDo:  Should we disconnect after publish?
+
+}
+
+
+
+
 void setup() 
 {
   Serial.begin(115200);
@@ -40,60 +92,49 @@ void setup()
   wifiClient.setInsecure();
   mqttClient.setServer(MQTT_URL, MQTT_PORT);
 
-
-  if ( mqttClient.connect("sensor-01", MQTT_USER, MQTT_PASS) )
-  {
-    Serial.print("MQTT Connect Success: "); Serial.println( mqttClient.state() );
-  }
-  else
-  {
-    Serial.print("MQTT Connect FAIL: "); Serial.println( mqttClient.state() );   
-  }
-
 }
+
 
 void loop() 
 {
 
-  uint32_t loopCount = 0;
-  boolean  success;
+  //Counts are roughly in milliseconds
+  static int ledCount     = 0;
+  static int publishCount = 0;
 
   mqttClient.loop();
 
-  while(1)
+
+  //Publish every so often
+  if( publishCount == 0 )
   {
+    rgbLedWrite(RGB_PIN, 20, 0, 0);  // Green
+    delay(5);
+    publish();
+    delay(5);
+    rgbLedWrite(RGB_PIN, 0, 0, 0);  // Off
 
-    if( loopCount == 0 )
-    {
-
-      success = mqttClient.publish("sensors/office1/temperature","hello world");
-      if( success )
-      {
-        Serial.println("++");
-      }
-      else
-      {
-        Serial.print("MQTT Publish failure: "); Serial.println( mqttClient.state() );
-      }
-
-      loopCount = 50;
-    }
-
-    rgbLedWrite(RGB_PIN, 25, 0, 0);  // Red
-    delay(500);
-    rgbLedWrite(RGB_PIN, 0, 25, 0);  // Green
-    delay(500);
-    rgbLedWrite(RGB_PIN, 0, 0, 25);  // Blue
-    delay(500);
-
-    Serial.print("Hello Kris  ");
-    Serial.println(loopCount);
-
-    loopCount--;
-
+    publishCount = 20000;
   }
 
-  
-  
+
+  //Blink LED
+  if( ledCount == 10 )
+  {
+    rgbLedWrite(RGB_PIN, 0, 0, 5);  // Very dim Blue
+  }
+  if( ledCount == 0 )
+  {
+    rgbLedWrite(RGB_PIN, 0, 0, 0);  // Off
+    ledCount = 5000;
  
+    Serial.print(".");
+  }
+
+
+  delay(1);
+
+  ledCount--;
+  publishCount--;
+
 }
