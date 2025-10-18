@@ -13,9 +13,79 @@
 #define I2C_SCL_PIN 5
 #define I2C_SDA_PIN 6
 
+#define DEVICE_NAME "sensor-01"
+
+#define VERSION     "0.1.0"
+
 
 WiFiClientSecure wifiClient;
 PubSubClient     mqttClient(wifiClient);
+
+uint32_t msgCount = 0;
+
+
+String generateJsonData( void )
+{
+
+  static String jsonStr;
+
+  jsonStr  = "{";      //Opening bracket
+
+  jsonStr += "\"ts\":";
+  jsonStr += time(nullptr);
+  jsonStr += ",";
+
+  jsonStr += "\"dev\":\"";
+  jsonStr += DEVICE_NAME;
+  jsonStr += "\",";
+
+  jsonStr += "\"msg\":";
+  jsonStr += msgCount;
+  jsonStr += ",";
+
+  jsonStr += "\"temp\":";
+  jsonStr += 80.0;
+  jsonStr += ",";
+
+  jsonStr += "\"RH\":";
+  jsonStr += 40.0;
+
+  jsonStr += "}";      //Closing bracket
+
+  msgCount++;
+
+  return jsonStr;
+}
+
+String generateJsonInfo( void )
+{
+
+  static String jsonStr;
+
+  jsonStr  = "{";      //Opening bracket
+
+  jsonStr += "\"ts\":";
+  jsonStr += time(nullptr);
+  jsonStr += ",";
+
+  jsonStr += "\"dev\":\"";
+  jsonStr += DEVICE_NAME;
+  jsonStr += "\",";
+
+  jsonStr += "\"msg\":";
+  jsonStr += msgCount;
+  jsonStr += ",";
+
+  jsonStr += "\"ver\":\"";
+  jsonStr += VERSION;
+  jsonStr += "\"";
+
+  jsonStr += "}";      //Closing bracket
+
+  msgCount++;
+
+  return jsonStr;
+}
 
 
 
@@ -24,13 +94,15 @@ void publish(void)
   static boolean firstPublish = true;
 
   Serial.println( "Publishing!");
+  Serial.println( time(nullptr) );
+  
 
   //Check if connected
   if( !mqttClient.connected() )
   {
     Serial.print( "Connecting... ");
 
-    if ( mqttClient.connect("sensor-01", MQTT_USER, MQTT_PASS) )
+    if ( mqttClient.connect(DEVICE_NAME, MQTT_USER, MQTT_PASS) )
     {
       Serial.print("Success: "); Serial.println( mqttClient.state() );
     }
@@ -45,7 +117,7 @@ void publish(void)
   //Is this the first publish?
   if( firstPublish )
   {
-    mqttClient.publish("sensors/office1/online","True");
+    mqttClient.publish("sensors/office/info", generateJsonInfo().c_str() );
     firstPublish = false;
   }
 
@@ -54,7 +126,7 @@ void publish(void)
 
 
   //Publish
-  if( mqttClient.publish("sensors/office1/temperature","hello world") )
+  if( mqttClient.publish("sensors/office/data", generateJsonData().c_str() ) )
   {
     Serial.println("++");
   }
@@ -92,6 +164,14 @@ void setup()
   wifiClient.setInsecure();
   mqttClient.setServer(MQTT_URL, MQTT_PORT);
 
+  //Get Time
+  configTime(0,0,"pool.ntp.org", "time.nist.gov");
+
+  Serial.print("Current Time:  ");
+  Serial.println( time(nullptr) );
+
+  msgCount = 0;
+
 }
 
 
@@ -114,7 +194,7 @@ void loop()
     delay(5);
     rgbLedWrite(RGB_PIN, 0, 0, 0);  // Off
 
-    publishCount = 20000;
+    publishCount = 30000;
   }
 
 
