@@ -6,6 +6,9 @@ secrets.py
 #python
 __pycache__
 
+#outputs
+*.txt
+\logs
 
 
 

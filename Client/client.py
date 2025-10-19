@@ -9,6 +9,56 @@ import secrets
 
 
 
+def logToFile(topic, payload):
+    import json
+    from datetime import datetime
+    import os
+
+    try:
+        # Convert payload from bytes to dictionary
+        data = json.loads(payload.decode('utf-8'))
+        
+        # Extract required fields
+        ts = data['ts']
+        dev = data['dev']
+        
+        # Get current date for filename
+        current_date = datetime.now()
+        month = str(current_date.month).zfill(2)
+        day = str(current_date.day).zfill(2)
+        
+        # Determine filename and CSV format based on topic
+        if 'info' in topic:
+            filename = f"{dev}-info-{month}-{day}.csv"
+            csv_line = f"{ts}\n"
+        elif 'data' in topic:
+            filename = f"{dev}-data-{month}-{day}.csv"
+            msg = data['msg']
+            temp = data['temp']
+            rh = data['RH']
+            csv_line = f"{ts},{msg},{temp},{rh}\n"
+        else:
+            return  # Skip if topic doesn't match expected patterns
+        
+        # Ensure we have write permissions (creates directory if needed)
+        os.makedirs('logs', exist_ok=True)
+        filepath = os.path.join('logs', filename)
+        
+        # Append data to file
+        with open(filepath, 'a') as f:
+            f.write(csv_line)
+            
+    except json.JSONDecodeError as e:
+        print(f"Error decoding JSON payload: {e}")
+    except KeyError as e:
+        print(f"Missing required field in payload: {e}")
+    except IOError as e:
+        print(f"Error writing to file: {e}")
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+
+
+
 ############
 # Callbacks
 ############
@@ -17,6 +67,8 @@ def on_connect(client, userdata, flags, rc, properties=None):
 
 def on_message(client, userdata, msg):
     print( str(int(time.time())) + ": " + msg.topic + " " + str(msg.payload))
+
+    logToFile( msg.topic,  msg.payload )
 
 
 # -Code start- #
