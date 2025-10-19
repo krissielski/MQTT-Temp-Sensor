@@ -6,13 +6,12 @@
 import paho.mqtt.client as mqtt
 import time
 import secrets
-
+import json
+from datetime import datetime
+import os
 
 
 def logToFile(topic, payload):
-    import json
-    from datetime import datetime
-    import os
 
     try:
         # Convert payload from bytes to dictionary
@@ -28,15 +27,19 @@ def logToFile(topic, payload):
         day = str(current_date.day).zfill(2)
         
         # Determine filename and CSV format based on topic
+        # Convert Unix timestamp to formatted time
+        timestamp_datetime = datetime.fromtimestamp(ts)
+        formatted_time = timestamp_datetime.strftime("%I:%M %p")  # 12-hour format with AM/PM
+        
         if 'info' in topic:
             filename = f"{dev}-info-{month}-{day}.csv"
-            csv_line = f"{ts}\n"
+            csv_line = f"{ts},{formatted_time}\n"
         elif 'data' in topic:
             filename = f"{dev}-data-{month}-{day}.csv"
             msg = data['msg']
             temp = data['temp']
             rh = data['RH']
-            csv_line = f"{ts},{msg},{temp},{rh}\n"
+            csv_line = f"{ts},{formatted_time},{msg},{temp},{rh}\n"
         else:
             return  # Skip if topic doesn't match expected patterns
         
