@@ -24,6 +24,10 @@
 
 #define VERSION     "0.1.0"
 
+#define JAN1_2025   1735689600    // Unix time for Jan 1, 2025
+
+#define PUBLISH_PERIOD  (2 * 60)  // in seconds
+
 
 WiFiClientSecure wifiClient;
 PubSubClient     mqttClient(wifiClient);
@@ -207,9 +211,22 @@ void setup()
   wifiClient.setInsecure();
   mqttClient.setServer(MQTT_URL, MQTT_PORT);
 
-  //Get Time
+  //Enable NT sync
   configTime(0,0,"pool.ntp.org", "time.nist.gov");
 
+  //wait until NTP syncs
+  while(true)
+  {
+    time_t now = time(nullptr);
+    if( now > JAN1_2025 )
+    {
+      break;
+    }
+    delay(500);
+    Serial.print("*");
+  }
+
+  Serial.println("");
   Serial.print("Current Time:  ");
   Serial.println( time(nullptr) );
 
@@ -234,15 +251,19 @@ void setup()
 void loop() 
 {
 
-  //Counts are roughly in milliseconds
-  static int ledCount     = 0;
-  static int publishCount = 0;
+  static int    ledCount        = 0;  //Count roughly in milliseconds
+  static time_t nextPublishTime = 0;  //time in seconds
+  time_t        currTime;
 
+
+  //Process MQTT messages
   mqttClient.loop();
 
+  //Get current time
+  currTime = time(nullptr); 
 
   //Publish every so often
-  if( publishCount == 0 )
+  if( currTime >= nextPublishTime )
   {
     rgbLedWrite(RGB_PIN, 20, 0, 0);  // Green
     delay(5);
@@ -250,7 +271,7 @@ void loop()
     delay(5);
     rgbLedWrite(RGB_PIN, 0, 0, 0);  // Off
 
-    publishCount = 30000;
+    nextPublishTime = currTime + PUBLISH_PERIOD;
   }
 
 
@@ -263,14 +284,11 @@ void loop()
   {
     rgbLedWrite(RGB_PIN, 0, 0, 0);  // Off
     ledCount = 5000;
- 
-    Serial.print(".");
   }
 
 
   delay(1);
 
   ledCount--;
-  publishCount--;
 
 }
