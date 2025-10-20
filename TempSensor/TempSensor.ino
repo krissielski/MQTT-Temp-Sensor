@@ -1,17 +1,25 @@
-
-//Waveshare ESP32-C3-Zero
-
+// MQTT Temperature Sensor
+//   Waveshare ESP32-C3-Zero
+//
+// Required Libraries:
+//    PubSubClient
+//    Adafruit SHT31
+//
 //MQTT PubSubClient API: https://pubsubclient.knolleary.net/api
+//
 
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 #include <PubSubClient.h>
+#include <Wire.h>
+#include <Adafruit_SHT31.h>
+#include <math.h>
 #include "secrets.h"
 
 #define RGB_PIN     10
-#define GND_PIN     4
-#define I2C_SCL_PIN 5
-#define I2C_SDA_PIN 6
+#define GND_PIN     0
+#define I2C_SCL_PIN 1
+#define I2C_SDA_PIN 2
 
 #define DEVICE_NAME "sensor-01"
 
@@ -21,10 +29,12 @@
 WiFiClientSecure wifiClient;
 PubSubClient     mqttClient(wifiClient);
 
+Adafruit_SHT31   sht31 = Adafruit_SHT31();
+
 uint32_t msgCount = 0;
 
 
-String generateJsonData( void )
+String generateJsonData( float temperature, float humidity )
 {
 
   static String jsonStr;
@@ -44,11 +54,11 @@ String generateJsonData( void )
   jsonStr += ",";
 
   jsonStr += "\"temp\":";
-  jsonStr += 80.0;
+  jsonStr += temperature;
   jsonStr += ",";
 
   jsonStr += "\"RH\":";
-  jsonStr += 40.0;
+  jsonStr += humidity;
 
   jsonStr += "}";      //Closing bracket
 
@@ -88,6 +98,34 @@ String generateJsonInfo( void )
 }
 
 
+float getRH()
+{
+  float rh = sht31.readHumidity();
+
+  if (isnan(rh)) 
+  {
+    return -1.0;
+  }
+  return roundf(rh * 10.0f) / 10.0f;
+}
+
+
+float getTemp()
+{
+  float tc = sht31.readTemperature(); // Celsius
+
+  if (isnan(tc))
+  {
+    return -1.0;
+  }
+
+  // Convert C to F and round to nearest tenth
+  float tf = (tc * 9.0f / 5.0f) + 32.0f;
+  return roundf(tf * 10.0f) / 10.0f;
+}
+
+
+
 
 void publish(void)
 {
@@ -123,10 +161,13 @@ void publish(void)
 
 
   //ToDo: Get Temperature data here
+  float tmp = getTemp();
+  float rh  = getRH();
 
+  Serial.println("Temp = " + String(tmp) + "    RH = " + String(rh) );
 
   //Publish
-  if( mqttClient.publish("sensors/office/data", generateJsonData().c_str() ) )
+  if( mqttClient.publish("sensors/office/data", generateJsonData(tmp,rh).c_str() ) )
   {
     Serial.println("++");
   }
@@ -145,6 +186,9 @@ void publish(void)
 
 void setup() 
 {
+
+  rgbLedWrite(RGB_PIN, 0, 20, 0);  // Red, indicating startup
+
   Serial.begin(115200);
 
   WiFi.begin(WIFI_SSID, WIFI_PASS);
@@ -169,6 +213,19 @@ void setup()
 
   Serial.print("Current Time:  ");
   Serial.println( time(nullptr) );
+
+
+  //Initialize SHT31
+  Wire.begin(I2C_SDA_PIN, I2C_SCL_PIN);
+
+  if( !sht31.begin(0x44) ) 
+  {
+    Serial.println(" ** SHT31 ERROR **");
+    while (1){ delay(1); }
+  }
+  Serial.println("Found SHT31");
+
+  rgbLedWrite(RGB_PIN, 0, 0, 0);  // Off, startup successful
 
   msgCount = 0;
 
