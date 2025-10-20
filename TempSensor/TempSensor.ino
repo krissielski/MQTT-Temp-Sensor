@@ -13,7 +13,6 @@
 #include <PubSubClient.h>
 #include <Wire.h>
 #include <Adafruit_SHT31.h>
-#include <math.h>
 #include "secrets.h"
 
 #define RGB_PIN     10
@@ -54,11 +53,11 @@ String generateJsonData( float temperature, float humidity )
   jsonStr += ",";
 
   jsonStr += "\"temp\":";
-  jsonStr += temperature;
+  jsonStr += String(temperature,1);
   jsonStr += ",";
 
   jsonStr += "\"RH\":";
-  jsonStr += humidity;
+  jsonStr += String(humidity,1);
 
   jsonStr += "}";      //Closing bracket
 
@@ -106,7 +105,7 @@ float getRH()
   {
     return -1.0;
   }
-  return roundf(rh * 10.0f) / 10.0f;
+  return rh;
 }
 
 
@@ -119,9 +118,9 @@ float getTemp()
     return -1.0;
   }
 
-  // Convert C to F and round to nearest tenth
+  //Convert C to F
   float tf = (tc * 9.0f / 5.0f) + 32.0f;
-  return roundf(tf * 10.0f) / 10.0f;
+  return tf;
 }
 
 
