@@ -190,6 +190,10 @@ void publish(void)
 void setup() 
 {
 
+  //Create Virtual Gnd
+  pinMode(GND_PIN, OUTPUT); 
+  digitalWrite(GND_PIN, LOW);
+
   rgbLedWrite(RGB_PIN, 0, 20, 0);  // Red, indicating startup
 
   Serial.begin(115200);
