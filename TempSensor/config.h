@@ -1,7 +1,7 @@
 #pragma once
 
 //Device Name
-#define DEVICE_NAME      "sensor-01"
+#define DEVICE_NAME      "A001"
 
 
 // MQTT Topic Structure Configuration

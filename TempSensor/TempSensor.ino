@@ -21,11 +21,11 @@
 #define I2C_SCL_PIN 1
 #define I2C_SDA_PIN 2
 
-#define VERSION     "0.1.0"
+#define VERSION     "1.0.0"
 
 #define JAN1_2025   1735689600    // Unix time for Jan 1, 2025
 
-#define PUBLISH_PERIOD  (2 * 60)  // in seconds
+#define PUBLISH_PERIOD  (5 * 60)  // in seconds
 
 
 WiFiClientSecure wifiClient;
