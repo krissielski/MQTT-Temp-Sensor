@@ -14,13 +14,12 @@
 #include <Wire.h>
 #include <Adafruit_SHT31.h>
 #include "secrets.h"
+#include "config.h"
 
 #define RGB_PIN     10
 #define GND_PIN     0
 #define I2C_SCL_PIN 1
 #define I2C_SDA_PIN 2
-
-#define DEVICE_NAME "sensor-01"
 
 #define VERSION     "0.1.0"
 
@@ -35,6 +34,27 @@ PubSubClient     mqttClient(wifiClient);
 Adafruit_SHT31   sht31 = Adafruit_SHT31();
 
 uint32_t msgCount = 0;
+
+
+String generateTopic( const char* topic )
+{
+  static String topicStr;
+
+  // Format: root/site/area/sensor-type/deviceID/topic
+  topicStr  = "iot";
+  topicStr += "/";
+  topicStr += MQTT_SITE;
+  topicStr += "/";
+  topicStr += MQTT_AREA;
+  topicStr += "/";
+  topicStr += MQTT_TYPE;
+  topicStr += "/";
+  topicStr += DEVICE_NAME;
+  topicStr += "/";
+  topicStr += topic;
+
+  return topicStr;
+}
 
 
 String generateJsonData( float temperature, float humidity )
@@ -158,7 +178,7 @@ void publish(void)
   //Is this the first publish?
   if( firstPublish )
   {
-    mqttClient.publish("sensors/office/info", generateJsonInfo().c_str() );
+    mqttClient.publish(generateTopic("info").c_str(), generateJsonInfo().c_str() );
     firstPublish = false;
   }
 
@@ -170,7 +190,7 @@ void publish(void)
   Serial.println("Temp = " + String(tmp) + "    RH = " + String(rh) );
 
   //Publish
-  if( mqttClient.publish("sensors/office/data", generateJsonData(tmp,rh).c_str() ) )
+  if( mqttClient.publish(generateTopic("data").c_str(), generateJsonData(tmp,rh).c_str() ) )
   {
     Serial.println("++");
   }
